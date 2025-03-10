@@ -71,15 +71,26 @@ def trackbarsInit(): #create trackbars (for ROI)
     # most of these will be changed to constants once we get definite camera resolution
 
 def compare(initialH, initialS, initialV, roi):
-
     currentH = np.round(np.mean(roi[:, :, 0]), 2)
-    currentS = np.round(np.mean(roi[:, :, 1]), 2)
-    currentV = np.round(np.mean(roi[:, :, 2]), 2)
+    #currentS = np.round(np.mean(roi[:, :, 1]), 2)
+    #currentV = np.round(np.mean(roi[:, :, 2]), 2)  # S and V unneeded for now, Hue is the main deciding factor in color
 
-    #print("Current HSV:(", currentH, ",", currentS, ",", currentV, ")")
-    #Include the Comparing code here.
+    diffH = abs(currentH - initialH)
+
+    color_thresholds = { #thresholds. the differences in initial/ current hue that correspond to each color
+        "Red": [(0, 10), (170, 180)],  # Red wraps around (0-10 and 170-180)
+        "Yellow": [(20, 35)],
+        "Green": [(40, 85)],
+        "Blue": [(90, 130)]   
+    }
+
+    for color, ranges in color_thresholds.items():
+        for (low, high) in ranges:
+            if low <= diffH <= high:
+                return color
+    return "Unknown"
+            
     #TODO: Figure out which changes in H/S/V compared to original correspond to a red, blue, green, or yellow marble
-    #Once above is known, simply implement the comparing logic by comparing values
 
 
 #initialization
@@ -92,8 +103,9 @@ trackbarsInit()
 
 while True:
     display()
-    compare(initialH, initialS, initialV, roi) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
-    compare(initialH2, initialS2, initialV2, roi2) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
+    if initialH is not None:
+        print("CURRENT COLOR FOR ROI 1", compare(initialH, initialS, initialV, roi)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
+        print("CURRENT COLOR FOR ROI 2", compare(initialH2, initialS2, initialV2, roi2)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
     if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
