@@ -41,9 +41,11 @@ def hsvGetInitial(roi, roi2): # grabs initial HSV (DOES NOT RUN ONCE. RUNS EVERY
     avgH = np.round(np.mean(roi[:, :, 0]), 2)
     avgS = np.round(np.mean(roi[:, :, 1]), 2)     # splits hsv channels, takes indivudual avgs, and rounds to 2 decimal places 
     avgV = np.round(np.mean(roi2[:, :, 2]), 2)
+    
     avgH2 = np.round(np.mean(roi2[:, :, 0]), 2)
     avgS2 = np.round(np.mean(roi2[:, :, 1]), 2)     # splits hsv channels, takes indivudual avgs, and rounds to 2 decimal places 
     avgV2 = np.round(np.mean(roi2[:, :, 2]), 2)
+    
     print("Initial HSV:(", avgH, ",", avgS, ",", avgV, ")")
     print("Initial HSV2:(", avgH2, ",", avgS2, ",", avgV2, ")")
 
@@ -78,7 +80,7 @@ def compare(initialH, initialS, initialV, roi):
     diffH = abs(currentH - initialH)
 
     color_thresholds = { #thresholds. the differences in initial/ current hue that correspond to each color
-        "Red": [(0, 10), (170, 180)],  # Red wraps around (0-10 and 170-180)
+        "Red": [(0, 10), (170, 180)], # random values, will be changed
         "Yellow": [(20, 35)],
         "Green": [(40, 85)],
         "Blue": [(90, 130)]   
