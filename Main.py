@@ -78,12 +78,12 @@ def compare(initialH, initialS, initialV, roi):
     #currentV = np.round(np.mean(roi[:, :, 2]), 2)  # S and V unneeded for now, Hue is the main deciding factor in color
 
     diffH = abs(currentH - initialH)
-
+    #print(diffH)
     color_thresholds = { #thresholds. the differences in initial/ current hue that correspond to each color
-        "Red": [(0, 10), (170, 180)], # random values, will be changed
-        "Yellow": [(20, 35)],
-        "Green": [(40, 85)],
-        "Blue": [(90, 130)]   
+        "Red": [(20,34)], # random values, will be changed
+        "Yellow": [(17, 21)],
+        "Green": [(6, 15)],
+        "Blue": [(50, 70)]   
     }
 
     for color, ranges in color_thresholds.items():
@@ -96,7 +96,7 @@ def compare(initialH, initialS, initialV, roi):
 
 
 #initialization
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_AUTO_WB, 0.0) # Disable automatic white balance
 cap.set(cv2.CAP_PROP_WB_TEMPERATURE, 4200) # Set manual white balance temperature to 4200K
 cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0) 
@@ -106,8 +106,8 @@ trackbarsInit()
 while True:
     display()
     if initialH is not None:
-        print("CURRENT COLOR FOR ROI 1", compare(initialH, initialS, initialV, roi)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
-        print("CURRENT COLOR FOR ROI 2", compare(initialH2, initialS2, initialV2, roi2)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
+        print(compare(initialH, initialS, initialV, roi)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
+        #print("CURRENT COLOR FOR ROI 2", compare(initialH2, initialS2, initialV2, roi2)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
     if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
