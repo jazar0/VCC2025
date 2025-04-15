@@ -3,9 +3,18 @@ import numpy as np
 
 roi = None
 roi2 = None
-initialH, initialS, initialV = None, None, None
-initialH2, initialS2, initialV2 = None, None, None
 
+def load_thresholds(path='thresholds.txt'):
+    thresholds = {}
+    with open(path, 'r') as f:
+        for line in f:
+            name, values = line.strip().split(':')
+            vals = list(map(int, values.split(',')))
+            thresholds[name] = {
+                'low': np.array(vals[0:3]),
+                'high': np.array(vals[3:6])
+            }
+    return thresholds
 
 def display():  # this function displays multiple windows and handles/returns the ROI
     global roi, roi2
@@ -36,27 +45,7 @@ def display():  # this function displays multiple windows and handles/returns th
     cv2.imshow("ROI2", roi2)
     return roi, roi2
     
-def hsvGetInitial(roi, roi2): # grabs initial HSV (DOES NOT RUN ONCE. RUNS EVERY TIME TRACKBAR IS UPDATED.) for future comparison
-    global initialH, initialS, initialV, initialH2, initialS2, initialV2 
-    avgH = np.round(np.mean(roi[:, :, 0]), 2)
-    avgS = np.round(np.mean(roi[:, :, 1]), 2)     # splits hsv channels, takes indivudual avgs, and rounds to 2 decimal places 
-    avgV = np.round(np.mean(roi2[:, :, 2]), 2)
-    
-    avgH2 = np.round(np.mean(roi2[:, :, 0]), 2)
-    avgS2 = np.round(np.mean(roi2[:, :, 1]), 2)     # splits hsv channels, takes indivudual avgs, and rounds to 2 decimal places 
-    avgV2 = np.round(np.mean(roi2[:, :, 2]), 2)
-    
-    print("Initial HSV:(", avgH, ",", avgS, ",", avgV, ")")
-    print("Initial HSV2:(", avgH2, ",", avgS2, ",", avgV2, ")")
-
-    initialH, initialS, initialV = avgH, avgS, avgV
-    initialH2, initialS2, initialV2 = avgH2, avgS2, avgV2
-
-
 def onTrackbarChange(x):
-    global roi, roi2
-    if roi is not None:
-        hsvGetInitial(roi, roi2)
     return
 
 def trackbarsInit(): #create trackbars (for ROI)
@@ -72,28 +61,19 @@ def trackbarsInit(): #create trackbars (for ROI)
     cv2.createTrackbar("Scale2", "Trackbars", 100, frame.shape[0], onTrackbarChange) #min value is 100 pix, max is the height, this value controls the scale value of the square for roi
     # most of these will be changed to constants once we get definite camera resolution
 
-def compare(initialH, initialS, initialV, roi):
-    currentH = np.round(np.mean(roi[:, :, 0]), 2)
-    #currentS = np.round(np.mean(roi[:, :, 1]), 2)
-    #currentV = np.round(np.mean(roi[:, :, 2]), 2)  # S and V unneeded for now, Hue is the main deciding factor in color
+def compare(thresholds, roi):
+    max_match_count = 0
+    detected_color = "Unknown"
+    
+    for color, thresh in thresholds.items():
+        mask = cv2.inRange(roi, thresh['low'], thresh['high'])
+        match_count = cv2.countNonZero(mask)
+        
+        if match_count > max_match_count and match_count > 50:  # min matches need to be 50 px, it selects the color with most matching pixels
+            max_match_count = match_count
+            detected_color = color
 
-    diffH = abs(currentH - initialH)
-    #print(diffH)
-    color_thresholds = { #thresholds. the differences in initial/ current hue that correspond to each color
-        "Red": [(20,34)], # random values, will be changed
-        "Yellow": [(17, 21)],
-        "Green": [(6, 15)],
-        "Blue": [(50, 70)]   
-    }
-
-    for color, ranges in color_thresholds.items():
-        for (low, high) in ranges:
-            if low <= diffH <= high:
-                return color
-    return "Unknown"
-            
-    #TODO: Figure out which changes in H/S/V compared to original correspond to a red, blue, green, or yellow marble
-
+    return detected_color
 
 #initialization
 cap = cv2.VideoCapture(1)
@@ -102,12 +82,25 @@ cap.set(cv2.CAP_PROP_WB_TEMPERATURE, 4200) # Set manual white balance temperatur
 cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0) 
 cap.set(cv2.CAP_PROP_EXPOSURE, -7) 
 trackbarsInit()
+thresholds = load_thresholds()
+
+prev_color_lane1 = None
+prev_color_lane2 = None
 
 while True:
     display()
-    if initialH is not None:
-        print(compare(initialH, initialS, initialV, roi)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
-        #print("CURRENT COLOR FOR ROI 2", compare(initialH2, initialS2, initialV2, roi2)) # feed the 3 global variables for the initial HSV (which is updated upon trackbar moving) and the current roi and compares them
+    if roi is not None and roi2 is not None:
+        color_lane1 = compare(thresholds, roi)
+        color_lane2 = compare(thresholds, roi2)
+
+        if color_lane1 != prev_color_lane1:
+            print(f"Lane 1: {color_lane1}")
+            prev_color_lane1 = color_lane1
+
+        if color_lane2 != prev_color_lane2:
+            print(f"Lane 2: {color_lane2}")
+            prev_color_lane2 = color_lane2
+
     if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
