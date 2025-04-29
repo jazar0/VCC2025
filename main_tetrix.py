@@ -1,15 +1,23 @@
 import cv2 
 import numpy as np
 import serial # add Serial library for Serial communication
-import math
 import time
 Arduino_Serial = serial.Serial('com3',9600) #Create Serial port object called arduinoSerialData
 
 roi = None
 roi2 = None
 
-distance = 5
-radius = 14
+def motorForward():
+    Arduino_Serial.write(str.encode('y'))
+    print("Turn motor forwards")
+
+def motorBackward():
+    Arduino_Serial.write(str.encode('n'))
+    print("Turn motor backwards")
+
+def motorStop():
+    Arduino_Serial.write(str.encode('s'))
+    print("Turn motor off")
 
 def load_thresholds(path='thresholds.txt'):
     thresholds = {}
@@ -82,59 +90,6 @@ def compare(thresholds, roi):
 
     return detected_color
 
-def getAngle(d, r): # Get the angle needed with bar distance d and lever arm r
-    return 2*math.arcsin(d/(2*r))
-
-def goToPosition(pos):
-    global currentPosition, distance, radius
-    angle = getAngle(distance, radius)
-    currentPosition = pos
-    if (currentPosition == 0):
-        if (pos == 1):
-            Arduino_Serial.write(str.encode(str(angle)))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode('180'))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode(str(180 - angle)))
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str((angle/2) - 90)))
-    elif (currentPosition == 1):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode(str(-1*angle)))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode(str(180 - angle)))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode('180'))
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str(-90 - (angle/2))))
-    elif (currentPosition == 2):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode('180'))
-        elif (pos == 1):
-            Arduino_Serial.write(str.encode(str(angle - 180)))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode(str(angle)))
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str((angle/2) + 90)))
-    elif (currentPosition == 3):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode(str(180 - angle)))
-        elif (pos == 1):
-            Arduino_Serial.write(str.encode('180'))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode(str(-1*angle)))
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str(90 - (angle/2))))
-    elif (currentPosition == 4):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode(str(90 - (angle/2))))
-        elif (pos == 1):
-            Arduino_Serial.write(str.encode(str(90 + (angle/2))))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode(str(-90 - (angle/2))))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode(str((angle/2) - 90)))
-        
 #initialization
 cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_AUTO_WB, 0.0) # Disable automatic white balance
@@ -147,16 +102,6 @@ thresholds = load_thresholds()
 prev_color_lane1 = None
 prev_color_lane2 = None
 
-laneOfInterest = None # last detected lane. L = left lane, R = right lane 
-colorOfInterest = None # last detected color
-
-currentPosition = 0     #0 = Yellow in Lane R/Default
-                        #1 = Yellow in Lane L
-                        #2 = Blue in Lane R
-                        #3 = Blue in Lane L
-                        #4 = Horizontal 
-
-
 while True:
     display()
     if roi is not None and roi2 is not None:
@@ -166,31 +111,10 @@ while True:
         if color_lane1 != prev_color_lane1:
             print(f"Lane 1: {color_lane1}")
             prev_color_lane1 = color_lane1
-            laneOfInterest = "R"
-            colorOfInterest = color_lane1
-            
+
         if color_lane2 != prev_color_lane2:
             print(f"Lane 2: {color_lane2}")
             prev_color_lane2 = color_lane2
-            laneOfInterest = "R"
-            colorOfInterest = color_lane2
-
-        if colorOfInterest in ["red", "green"] and currentPosition != 4:
-            goToPosition(4)
-        elif colorOfInterest == "yellow":
-            if laneOfInterest == "R":
-                if currentPosition != 0:
-                    goToPosition(0)
-            else:
-                if currentPosition != 1:
-                    goToPosition(1)
-        elif colorOfInterest == "blue":
-            if laneOfInterest == "R":
-                if currentPosition != 2:
-                    goToPosition(2)
-            else:
-                if currentPosition != 3:
-                    goToPosition(3)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
             break
