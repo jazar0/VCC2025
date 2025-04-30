@@ -8,8 +8,8 @@ Arduino_Serial = serial.Serial('com3',9600) #Create Serial port object called ar
 roi = None
 roi2 = None
 
-distance = 5
-radius = 14
+distance = 18
+radius = 15.5
 
 def load_thresholds(path='thresholds.txt'):
     thresholds = {}
@@ -83,12 +83,13 @@ def compare(thresholds, roi):
     return detected_color
 
 def getAngle(d, r): # Get the angle needed with bar distance d and lever arm r
-    return 2*math.arcsin(d/(2*r))
+    return 360*math.asin(d/(2*r))/math.pi
 
 def goToPosition(pos):
+    print('TWK', pos)
     global currentPosition, distance, radius
     angle = getAngle(distance, radius)
-    currentPosition = pos
+    print ("CURPOS", currentPosition, "ANGLE", angle)
     if (currentPosition == 0):
         if (pos == 1):
             Arduino_Serial.write(str.encode(str(angle)))
@@ -134,9 +135,10 @@ def goToPosition(pos):
             Arduino_Serial.write(str.encode(str(-90 - (angle/2))))
         elif (pos == 3):
             Arduino_Serial.write(str.encode(str((angle/2) - 90)))
+    currentPosition = pos
         
 #initialization
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(2)
 cap.set(cv2.CAP_PROP_AUTO_WB, 0.0) # Disable automatic white balance
 cap.set(cv2.CAP_PROP_WB_TEMPERATURE, 4200) # Set manual white balance temperature to 4200K
 cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0) 
@@ -144,6 +146,8 @@ cap.set(cv2.CAP_PROP_EXPOSURE, -7)
 trackbarsInit()
 thresholds = load_thresholds()
 
+
+start = False # when to start 
 prev_color_lane1 = None
 prev_color_lane2 = None
 
@@ -159,14 +163,16 @@ currentPosition = 0     #0 = Yellow in Lane R/Default
 
 while True:
     display()
-    if roi is not None and roi2 is not None:
+    if cv2.waitKey(1) & 0xFF == ord('s'):
+        start = True
+    if roi is not None and roi2 is not None and start == True:
         color_lane1 = compare(thresholds, roi)
         color_lane2 = compare(thresholds, roi2)
 
         if color_lane1 != prev_color_lane1:
             print(f"Lane 1: {color_lane1}")
             prev_color_lane1 = color_lane1
-            laneOfInterest = "R"
+            laneOfInterest = "L"
             colorOfInterest = color_lane1
             
         if color_lane2 != prev_color_lane2:
@@ -175,22 +181,27 @@ while True:
             laneOfInterest = "R"
             colorOfInterest = color_lane2
 
-        if colorOfInterest in ["red", "green"] and currentPosition != 4:
+        if colorOfInterest in ["Red", "Green"] and currentPosition != 4:
             goToPosition(4)
-        elif colorOfInterest == "yellow":
+            print(4)
+        elif colorOfInterest == "Yellow":
             if laneOfInterest == "R":
                 if currentPosition != 0:
                     goToPosition(0)
+                    print(0)
             else:
                 if currentPosition != 1:
                     goToPosition(1)
-        elif colorOfInterest == "blue":
+                    print(1)
+        elif colorOfInterest == "Blue":
             if laneOfInterest == "R":
                 if currentPosition != 2:
                     goToPosition(2)
+                    print(2)
             else:
                 if currentPosition != 3:
                     goToPosition(3)
+                    print(3)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
             break
