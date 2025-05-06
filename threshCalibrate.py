@@ -4,8 +4,8 @@ import numpy as np
 def nothing(x): pass
 
 # Define color names
-colors = ['Red1', 'Red2', 'Yellow', 'Green', 'Blue']
-selected_color_index = 0  # starts on Red1
+colors = ['Red', 'Yellow', 'Green', 'Blue']
+selected_color_index = 0  # starts on Red
 
 cv2.namedWindow("Trackbars")
 cv2.namedWindow("View")

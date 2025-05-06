@@ -1,17 +1,20 @@
 import cv2 
 import numpy as np
-import serial # add Serial library for Serial communication
+import serial
 import math
 import time
-Arduino_Serial = serial.Serial('com3',9600) #Create Serial port object called arduinoSerialData
+
+Arduino_Serial = serial.Serial('com3', 9600) # Create Serial port object 
 
 roi = None
 roi2 = None
 
-distance = 18
-radius = 15.5
+# Constants
+distance = 17.2
+radius = 14.24
 
-def load_thresholds(path='thresholds.txt'):
+# ------------- FUNCTIONS -------------
+def load_thresholds(path='thresholds.txt'): # Loads threshold values from a text file
     thresholds = {}
     with open(path, 'r') as f:
         for line in f:
@@ -23,30 +26,37 @@ def load_thresholds(path='thresholds.txt'):
             }
     return thresholds
 
-def display():  # this function displays multiple windows and handles/returns the ROI
+def load_rois(path='rois.txt'):
+    rois = {}
+    with open(path, 'r') as f:
+        for line in f:
+            name, values = line.strip().split(':')
+            x, y, scale = map(int, values.split(','))
+            rois[name.strip()] = {'x': x, 'y': y, 'scale': scale}
+    return rois
+
+def display():  # This function displays multiple windows and handles/returns the ROI
     global roi, roi2
-    # init and display HSV/BGR frames
+    
+    # Initialize BGR/HSV 
     ret, frame = cap.read()
     hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    #cv2.imshow("HSV", hsvFrame)
-    #cv2.imshow("BGR", frame)
 
-    # roi 
+    # Set ROI bounds via trackbars
     x = cv2.getTrackbarPos('X', 'Trackbars') 
     y = cv2.getTrackbarPos('Y', 'Trackbars') 
-    scale = cv2.getTrackbarPos('Scale', 'Trackbars')  #assign variables handled by trackbar
+    scale = cv2.getTrackbarPos('Scale', 'Trackbars')  
 
-    # roi 2
     x2 = cv2.getTrackbarPos('X2', 'Trackbars') 
     y2 = cv2.getTrackbarPos('Y2', 'Trackbars') 
-    scale2 = cv2.getTrackbarPos('Scale2', 'Trackbars')  #assign variables handled by trackbar
+    scale2 = cv2.getTrackbarPos('Scale2', 'Trackbars') 
 
-    hsvroirec = hsvFrame.copy() # copy so dont ruin the OG HSV image with rectangle
+    hsvroirec = hsvFrame.copy() # Copy old frame and display rectanges on top
     cv2.rectangle(hsvroirec, (x2, y2), (x2 + scale2, y2 + scale2), (255, 255, 255), 1)
     cv2.rectangle(hsvroirec, (x, y), (x + scale, y + scale), (255, 255, 255), 1)
-    cv2.imshow("HSV ROI Rectangle", hsvroirec) #draw rectangle on OG hsv to track roi 1/2 pos
+    cv2.imshow("HSV ROI Rectangle", hsvroirec) 
     
-    roi = hsvFrame[y:y + scale, x:x + scale] # crop roi from hsvFrame
+    roi = hsvFrame[y:y + scale, x:x + scale] # Crop the ROI from full frams and display them
     roi2 = hsvFrame[y2:y2 + scale2, x2:x2 + scale2] 
     cv2.imshow("ROI", roi)
     cv2.imshow("ROI2", roi2)
@@ -55,20 +65,26 @@ def display():  # this function displays multiple windows and handles/returns th
 def onTrackbarChange(x):
     return
 
-def trackbarsInit(): #create trackbars (for ROI)
+def trackbarsInit(): 
+    # Load the calibrated ROI values
+    rois = load_rois()
+
+    roi1 = rois['ROI1']
+    roi2 = rois['ROI2']
+
+    # Initialize Trackbars with default positions from rois.txt
     ret, frame = cap.read()
     cv2.namedWindow("Trackbars")
-    cv2.createTrackbar("X", "Trackbars", 0, frame.shape[1], onTrackbarChange) # sets max value as the width of image, this value controls the x value of the square for roi
-    cv2.createTrackbar("Y", "Trackbars", 0, frame.shape[0], onTrackbarChange) # sets max value as height of image, this value controls the y value of the square for roi     
-    cv2.createTrackbar("Scale", "Trackbars", 100, frame.shape[0], onTrackbarChange) #min value is 100 pix, max is the height, this value controls the scale value of the square for roi
+    cv2.createTrackbar("X", "Trackbars", roi1['x'], frame.shape[1], onTrackbarChange)  # Set default to ROI1's x position
+    cv2.createTrackbar("Y", "Trackbars", roi1['y'], frame.shape[0], onTrackbarChange)  # Set default to ROI1's y position
+    cv2.createTrackbar("Scale", "Trackbars", roi1['scale'], frame.shape[0], onTrackbarChange)  # Set to ROI1's scale
 
-    #trackbars for second ROI
-    cv2.createTrackbar("X2", "Trackbars", 0, frame.shape[1], onTrackbarChange) # sets max value as the width of image, this value controls the x value of the square for roi
-    cv2.createTrackbar("Y2", "Trackbars", 0, frame.shape[0], onTrackbarChange) # sets max value as height of image, this value controls the y value of the square for roi     
-    cv2.createTrackbar("Scale2", "Trackbars", 100, frame.shape[0], onTrackbarChange) #min value is 100 pix, max is the height, this value controls the scale value of the square for roi
-    # most of these will be changed to constants once we get definite camera resolution
+    # Trackbars for second ROI (ROI2)
+    cv2.createTrackbar("X2", "Trackbars", roi2['x'], frame.shape[1], onTrackbarChange)  # Set to ROI2's x position
+    cv2.createTrackbar("Y2", "Trackbars", roi2['y'], frame.shape[0], onTrackbarChange)  # Set to ROI2's y position
+    cv2.createTrackbar("Scale2", "Trackbars", roi2['scale'], frame.shape[0], onTrackbarChange)  # Set to ROI2's scale
 
-def compare(thresholds, roi):
+def compare(thresholds, roi): # Function that compares the ROI with thresholds
     max_match_count = 0
     detected_color = "Unknown"
     
@@ -85,11 +101,11 @@ def compare(thresholds, roi):
 def getAngle(d, r): # Get the angle needed with bar distance d and lever arm r
     return 360*math.asin(d/(2*r))/math.pi
 
-def goToPosition(pos):
-    print('TWK', pos)
+def goToPosition(pos): # Go to a certain position based on the current position and constant distance and radius
+    print('Going to: ', pos)
     global currentPosition, distance, radius
     angle = getAngle(distance, radius)
-    print ("CURPOS", currentPosition, "ANGLE", angle)
+    print ("Current Position: ", currentPosition, "Angle: ", angle)
     if (currentPosition == 0):
         if (pos == 1):
             Arduino_Serial.write(str.encode(str(angle)))
@@ -137,46 +153,50 @@ def goToPosition(pos):
             Arduino_Serial.write(str.encode(str((angle/2) - 90)))
     currentPosition = pos
         
-#initialization
-cap = cv2.VideoCapture(2)
+# ------------- INITIALIZATION -------------
+cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_AUTO_WB, 0.0) # Disable automatic white balance
 cap.set(cv2.CAP_PROP_WB_TEMPERATURE, 4200) # Set manual white balance temperature to 4200K
 cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0) 
 cap.set(cv2.CAP_PROP_EXPOSURE, -7) 
 trackbarsInit()
+
+# -- Variables --
+start = False # Prevents it from immediately detecting colors
 thresholds = load_thresholds()
-
-
-start = False # when to start 
 prev_color_lane1 = None
 prev_color_lane2 = None
 
 laneOfInterest = None # last detected lane. L = left lane, R = right lane 
 colorOfInterest = None # last detected color
 
-currentPosition = 0     #0 = Yellow in Lane R/Default
+currentPosition = 0     # Positions:
+                        #0 = Yellow in Lane R/Default
                         #1 = Yellow in Lane L
                         #2 = Blue in Lane R
                         #3 = Blue in Lane L
                         #4 = Horizontal 
 
-
+# ------------- MAIN LOOP -------------
 while True:
     display()
+
     if cv2.waitKey(1) & 0xFF == ord('s'):
         start = True
+        print("Program Start!")
+        
     if roi is not None and roi2 is not None and start == True:
         color_lane1 = compare(thresholds, roi)
         color_lane2 = compare(thresholds, roi2)
 
         if color_lane1 != prev_color_lane1:
-            print(f"Lane 1: {color_lane1}")
+            print(f"Detected in lane 1: {color_lane1}")
             prev_color_lane1 = color_lane1
             laneOfInterest = "L"
             colorOfInterest = color_lane1
             
         if color_lane2 != prev_color_lane2:
-            print(f"Lane 2: {color_lane2}")
+            print(f"Detected in lane 1: {color_lane2}")
             prev_color_lane2 = color_lane2
             laneOfInterest = "R"
             colorOfInterest = color_lane2
@@ -184,24 +204,23 @@ while True:
         if colorOfInterest in ["Red", "Green"] and currentPosition != 4:
             goToPosition(4)
             print(4)
+
         elif colorOfInterest == "Yellow":
             if laneOfInterest == "R":
                 if currentPosition != 0:
                     goToPosition(0)
-                    print(0)
             else:
                 if currentPosition != 1:
                     goToPosition(1)
-                    print(1)
+
         elif colorOfInterest == "Blue":
             if laneOfInterest == "R":
                 if currentPosition != 2:
                     goToPosition(2)
-                    print(2)
+
             else:
                 if currentPosition != 3:
                     goToPosition(3)
-                    print(3)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
             break
