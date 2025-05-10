@@ -101,6 +101,7 @@ def compare(thresholds, roi): # Function that compares the ROI with thresholds
 def getAngle(d, r): # Get the angle needed with bar distance d and lever arm r
     return 360*math.asin(d/(2*r))/math.pi
 
+'''
 def goToPosition(pos): # Go to a certain position based on the current position and constant distance and radius
     print('Going to: ', pos)
     global currentPosition, distance, radius
@@ -122,6 +123,7 @@ def goToPosition(pos): # Go to a certain position based on the current position 
             Arduino_Serial.write(str.encode(str(180 - angle)))
         elif (pos == 3):
             Arduino_Serial.write(str.encode('180'))
+            print('180 Degrees Sent!')
         elif (pos == 4):
             Arduino_Serial.write(str.encode(str(-90 - (angle/2))))
     elif (currentPosition == 2):
@@ -152,9 +154,26 @@ def goToPosition(pos): # Go to a certain position based on the current position 
         elif (pos == 3):
             Arduino_Serial.write(str.encode(str((angle/2) - 90)))
     currentPosition = pos
-        
+'''
+
+def goToPosition(pos): # Go to a certain position based on the current position and constant distance and radius
+    print('Going to: ', pos)
+    global currentPosition, distance, radius
+    angle = getAngle(distance, radius)
+    if (pos == 0):
+        Arduino_Serial.write(str.encode('0'))
+    if (pos == 1):
+        Arduino_Serial.write(str.encode(str(-1 * angle)))
+    if (pos == 2):
+        Arduino_Serial.write(str.encode('180'))
+    if (pos == 3):
+        Arduino_Serial.write(str.encode(str(180-angle)))
+    if (pos == 4):
+        Arduino_Serial.write(str.encode(str(90-(angle/2))))
+    
+    currentPosition = pos
 # ------------- INITIALIZATION -------------
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_AUTO_WB, 0.0) # Disable automatic white balance
 cap.set(cv2.CAP_PROP_WB_TEMPERATURE, 4200) # Set manual white balance temperature to 4200K
 cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0) 
@@ -196,7 +215,7 @@ while True:
             colorOfInterest = color_lane1
             
         if color_lane2 != prev_color_lane2:
-            print(f"Detected in lane 1: {color_lane2}")
+            print(f"Detected in lane 2: {color_lane2}")
             prev_color_lane2 = color_lane2
             laneOfInterest = "R"
             colorOfInterest = color_lane2
