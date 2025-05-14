@@ -40,7 +40,7 @@ def redraw_rois():
     cv2.imshow("Draw ROI", img_copy)
 
 # Grab a single frame from the webcam
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cv2.waitKey(5000) # Wait for the camera to warm up
 ret, img = cap.read()
 cap.release()

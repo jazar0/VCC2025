@@ -22,7 +22,7 @@ cv2.setTrackbarPos("H_high", "Trackbars", 255)
 cv2.setTrackbarPos("S_high", "Trackbars", 255)
 cv2.setTrackbarPos("V_high", "Trackbars", 255) 
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 
 saved_thresholds = {}
 

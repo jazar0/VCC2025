@@ -4,14 +4,14 @@ import serial
 import math
 import time
 
-Arduino_Serial = serial.Serial('com3', 9600) # Create Serial port object 
+Arduino_Serial = serial.Serial('com4', 9600) # Create Serial port object 
 
 roi = None
 roi2 = None
 
 # Constants
-distance = 17.2
-radius = 14.24
+distance = 14.5
+radius = 13
 
 # ------------- FUNCTIONS -------------
 def load_thresholds(path='thresholds.txt'): # Loads threshold values from a text file
@@ -160,16 +160,17 @@ def goToPosition(pos): # Go to a certain position based on the current position 
     print('Going to: ', pos)
     global currentPosition, distance, radius
     angle = getAngle(distance, radius)
+    print('Angle: ', angle)
     if (pos == 0):
-        Arduino_Serial.write(str.encode('0'))
+        Arduino_Serial.write(str.encode('0f'))
     if (pos == 1):
-        Arduino_Serial.write(str.encode(str(-1 * angle)))
+        Arduino_Serial.write(str.encode(str(-1 * angle) + 'f'))
     if (pos == 2):
-        Arduino_Serial.write(str.encode('180'))
+        Arduino_Serial.write(str.encode('180f'))
     if (pos == 3):
-        Arduino_Serial.write(str.encode(str(180-angle)))
+        Arduino_Serial.write(str.encode(str(180-angle) + 'f'))
     if (pos == 4):
-        Arduino_Serial.write(str.encode(str(90-(angle/2))))
+        Arduino_Serial.write(str.encode(str(90-(angle/2)) + 'f'))
     
     currentPosition = pos
 # ------------- INITIALIZATION -------------
