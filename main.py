@@ -10,7 +10,7 @@ roi = None
 roi2 = None
 
 # Constants
-distance = 14.5
+distance = 17.5
 radius = 13
 
 # ------------- FUNCTIONS -------------
@@ -92,7 +92,7 @@ def compare(thresholds, roi): # Function that compares the ROI with thresholds
         mask = cv2.inRange(roi, thresh['low'], thresh['high'])
         match_count = cv2.countNonZero(mask)
         
-        if match_count > max_match_count and match_count > 50:  # min matches need to be 50 px, it selects the color with most matching pixels
+        if match_count > max_match_count and match_count > 35:  # min matches need to be 50 px, it selects the color with most matching pixels
             max_match_count = match_count
             detected_color = color
 
@@ -100,61 +100,6 @@ def compare(thresholds, roi): # Function that compares the ROI with thresholds
 
 def getAngle(d, r): # Get the angle needed with bar distance d and lever arm r
     return 360*math.asin(d/(2*r))/math.pi
-
-'''
-def goToPosition(pos): # Go to a certain position based on the current position and constant distance and radius
-    print('Going to: ', pos)
-    global currentPosition, distance, radius
-    angle = getAngle(distance, radius)
-    print ("Current Position: ", currentPosition, "Angle: ", angle)
-    if (currentPosition == 0):
-        if (pos == 1):
-            Arduino_Serial.write(str.encode(str(angle)))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode('180'))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode(str(180 - angle)))
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str((angle/2) - 90)))
-    elif (currentPosition == 1):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode(str(-1*angle)))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode(str(180 - angle)))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode('180'))
-            print('180 Degrees Sent!')
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str(-90 - (angle/2))))
-    elif (currentPosition == 2):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode('180'))
-        elif (pos == 1):
-            Arduino_Serial.write(str.encode(str(angle - 180)))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode(str(angle)))
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str((angle/2) + 90)))
-    elif (currentPosition == 3):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode(str(180 - angle)))
-        elif (pos == 1):
-            Arduino_Serial.write(str.encode('180'))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode(str(-1*angle)))
-        elif (pos == 4):
-            Arduino_Serial.write(str.encode(str(90 - (angle/2))))
-    elif (currentPosition == 4):
-        if (pos == 0):
-            Arduino_Serial.write(str.encode(str(90 - (angle/2))))
-        elif (pos == 1):
-            Arduino_Serial.write(str.encode(str(90 + (angle/2))))
-        elif (pos == 2):
-            Arduino_Serial.write(str.encode(str(-90 - (angle/2))))
-        elif (pos == 3):
-            Arduino_Serial.write(str.encode(str((angle/2) - 90)))
-    currentPosition = pos
-'''
 
 def goToPosition(pos): # Go to a certain position based on the current position and constant distance and radius
     print('Going to: ', pos)
@@ -200,7 +145,6 @@ currentPosition = 0     # Positions:
 # ------------- MAIN LOOP -------------
 while True:
     display()
-
     if cv2.waitKey(1) & 0xFF == ord('s'):
         start = True
         print("Program Start!")
